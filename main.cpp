@@ -1,4 +1,5 @@
 // Copyright (c) 2017 Deep Aggarwal
+//TODO recheck these libraries
 #include <getopt.h>
 #include <grp.h>
 #include <pwd.h>
@@ -10,6 +11,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -46,27 +48,73 @@ void handleSignal(int sig) {
 }
 
 static uid_t getUserID(const char *name) {
-  struct passwd *pwentry = 0;
-  // TODO: I should use getpwnam_r(...) for improved thread safety
-  pwentry = getpwnam(name);
-  if (pwentry == NULL) {
-    std::string sname = name;
-    throw std::runtime_error("User \""+sname+"\" is not found");
+  struct passwd pwentry;
+  struct passwd *result;
+  char *buf;
+  size_t bufsize;
+  int s;
+
+  // Call to sysconf(_SC_GETPW_R_SIZE_MAX) returns either -1
+  // without changing errno or an initial value suggested for
+  // the size for buf
+  bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+  if (bufsize == -1) {
+    // Should be more than enough
+    bufsize = 16384;
   }
 
-  return pwentry->pw_uid;
+  buf = new char[bufsize];
+  if (buf == NULL) {
+    exit(EXIT_FAILURE);
+  }
+
+  s = getpwnam_r(name, &pwentry, buf, bufsize, &result);
+  if (result == NULL) {
+    if (s == 0) {
+      std::string sname = name;
+      throw std::runtime_error("User \""+ sname +"\" is not found");
+    } else {
+      std::cerr << "Error in getpwnam_r(...)" << std::endl;
+    }
+    exit(EXIT_FAILURE);
+  }
+
+  return pwentry.pw_uid;
 }
 
 static gid_t getGroupID(const char *name) {
-  struct group *grentry = 0;
-  // TODO: I should use getgrnam_r(...) for improved thread safety
-  grentry = getgrnam("haldaemon");
-  if (grentry == NULL) {
-    std::string sname = name;
-    throw std::runtime_error("Group \""+sname+"\" is not found");
+  struct group grentry;
+  struct group *result;
+  char *buf;
+  size_t bufsize;
+  int s;
+
+  // Call to sysconf(_SC_GETGR_R_SIZE_MAX) returns either -1
+  // without changing errno or an initial value suggested for
+  // the size for buf
+  bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
+  if (bufsize == -1) {
+    // Should be more than enough
+    bufsize = 16384;
   }
 
-  return grentry->gr_gid;
+  buf = new char[bufsize];
+  if (buf == NULL) {
+    exit(EXIT_FAILURE);
+  }
+
+  s = getgrnam_r(name, &grentry, buf, bufsize, &result);
+  if (result == NULL) {
+    if (s == 0) {
+      std::string sname = name;
+      throw std::runtime_error("User \""+ sname +"\" is not found");
+    } else {
+      std::cerr << "Error in getgrnam_r(...)" << std::endl;
+    }
+    exit(EXIT_FAILURE);
+  }
+
+  return grentry.gr_gid;
 }
 
 /**
@@ -150,11 +198,10 @@ static void daemonizeMe() {
     gid_t groupid = NULL;
     try {
       // FIXME: Hard-coded since this is the user that we will deal with
-      userid = getUserID("mydaemons");
-      groupid = getGroupID("mydaemons");
-    }
-    catch(const std::runtime_error& error) {
-      syslog(LOG_ERR, "\"mydaemons\" couldn't be found");
+      userid = getUserID("mydaemon");
+      groupid = getGroupID("mydaemon");
+    } catch(const std::runtime_error& error) {
+      syslog(LOG_ERR, "\"mydaemon\" couldn't be found");
       exit(EXIT_FAILURE);
     }
 

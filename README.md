@@ -1,15 +1,3 @@
-Daemon-izing a Process [UNDER DEVELOPMENT]
-======================
+# Daemon-izing a Process
 
-TODO
-NOTE: Under development, not tested yet
-
-Description
------------
-TODO
-
-
-Author
-------
-Deep Aggarwal
-deep.uiuc@gmail.com
+This example application shows how to create a daemon process.

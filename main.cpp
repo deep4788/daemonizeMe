@@ -1,5 +1,4 @@
 // Copyright (c) 2017 Deep Aggarwal
-//TODO recheck these libraries
 #include <getopt.h>
 #include <grp.h>
 #include <pwd.h>
@@ -9,7 +8,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -19,8 +17,6 @@
 static char *applicationName = NULL;
 static char *pidFileName = NULL;
 static int pidFd = -1;
-
-// TODO: add comments through out the while
 
 /**
  * @brief Callback function for handling signals.
@@ -250,15 +246,21 @@ static void daemonizeMe() {
     }
 }
 
+/**
+ * @brief This function starts the application
+ */
 static void startApplication() {
+    syslog(LOG_NOTICE, "I am daemonizeMe and I am writing to my syslog");
     while (true) {
-        syslog(LOG_NOTICE, "I am daemonizeMe and I am writing to my syslog");
-        auto start = std::chrono::high_resolution_clock::now();
-        std::this_thread::sleep_for(30s);
-        auto end = std::chrono::high_resolution_clock::now();
+        // Run your server here
+        // For example, a server running in background as a daemon process
+        // listening for incoming requests from clients
     }
 }
 
+/**
+ * @brief Free allocated memory
+ */
 static void cleanGlobalMemory() {
     if (pidFileName) {
         free(pidFileName);
@@ -267,7 +269,16 @@ static void cleanGlobalMemory() {
     return;
 }
 
+/**
+ * @brief Print usage on the stdout
+ */
 void printHelp(void) {
+    printf("\nUsage: %s [OPTIONS]\n\n", applicationName);
+    printf("Options:\n");
+    printf("    -h --help                 Print this help message\n");
+    printf("    -p --pid_file  filename   PID file used by this application\n");
+    printf("    -d --daemon               Daemonize this application\n");
+    printf("\n");
 }
 
 int main(int argc, char **argv) {
